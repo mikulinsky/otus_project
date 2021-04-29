@@ -1,0 +1,58 @@
+version: '2.2'
+
+services:
+  kafka:
+    image: wurstmeister/kafka:latest
+    restart: always
+    ports:
+      - 9092:9092
+      - 9093:9093
+    environment:
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_LISTENERS=INTERNAL://:9092,EXTERNAL://:9093
+      - KAFKA_ADVERTISED_LISTENERS=INTERNAL://192.168.88.14:9092,EXTERNAL://192.168.88.14:9093
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_INTER_BROKER_LISTENER_NAME=INTERNAL
+      - KAFKA_AUTO_CREATE_TOPICS_ENABLE=True
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - zookeeper
+
+  zookeeper:
+    image: wurstmeister/zookeeper:latest
+    restart: always
+    ports:
+      - 2181:2181
+
+  kafdrop:
+    container_name: kafdrop
+    image: obsidiandynamics/kafdrop
+    environment:
+      KAFKA_BROKERCONNECT: kafka:9092
+    ports:
+      - "9000:9000"
+
+  db:
+    image: mysql:8.0.19
+    restart: always
+    env_file: database.env
+    volumes:
+      - .data/db:/var/lib/mysql
+    ports:
+      - 3306:3306
+
+  notification_service:
+    image: openjdk:8u212-jdk-alpine3.9
+    restart: always
+    ports:
+      - 8880:8080
+    environment:
+      - KAFKA_URL=kafka:9093
+    env_file:
+      - database.env
+      - application.env
+    volumes:
+      - .:/app/
+    working_dir: /app
+    command: "/app/gradlew bootRun"
