@@ -30,7 +30,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     @Autowired private UserRepository userRepository;
 
     @PostConstruct
-    public void registerBot(){
+    private void registerBot(){
         TelegramBotsApi botsApi = new TelegramBotsApi();
         try {
             botsApi.registerBot(this);
@@ -57,7 +57,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
     }
 
-    public synchronized void register(Message message) {
+    private synchronized void register(Message message) {
         Long chatId = message.getChatId();
         String username = message.getChat().getUserName();
         User user = userRepository.findUserByUsername(username).orElse(new User(username, -1L));
